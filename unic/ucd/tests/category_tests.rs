@@ -18,6 +18,7 @@ extern crate unic_utils;
 
 use unic_ucd::bidi::BidiClass;
 use unic_ucd::normal::is_combining_mark;
+use unic_ucd::category::GeneralCategory as GC;
 use unic_utils::iter_all_chars;
 
 
@@ -29,14 +30,29 @@ fn test_bidi_nsm_against_gen_cat() {
     // Every NSM must be a GC=Mark
     for cp in iter_all_chars() {
         if BidiClass::of(cp) == BidiClass::NonspacingMark {
-            assert!(is_combining_mark(cp));
+            assert!(GC::is_mark(&GC::of(cp)));
         }
     }
 
     // Every GC!=Mark must not be an NSM
     for cp in iter_all_chars() {
-        if !is_combining_mark(cp) {
+        if !GC::is_mark(&GC::of(cp)) {
             assert_ne!(BidiClass::of(cp), BidiClass::NonspacingMark);
         }
     }
+}
+
+// This is just to help me learn what's happening
+#[test]
+fn test_gc_val() {
+    let mut list: Vec<GC> = Vec::new();
+    for cp in iter_all_chars() {
+        let category = GC::of(cp);
+        if !list.contains(&category) {
+            list.push(category);
+        }
+    }
+    // prints all GC values except from 'Unassigned'
+    // which is obvious since we loop over all chars
+    println!("{:?}", list);
 }
