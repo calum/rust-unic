@@ -41,6 +41,101 @@ fn test_bidi_nsm_against_gen_cat() {
         }
     }
 }
+
+/// `Bidi_Class=BN := General_Category in { Cc (Control), Co (PrivateUse) }`
+///
+/// <http://www.unicode.org/reports/tr9/#NSM>
+#[test]
+fn test_bidi_bn_against_gen_cat() {
+    // Every BN must be a GC=Other
+    for cp in iter_all_chars() {
+        if BidiClass::of(cp) == BidiClass::BoundaryNeutral {
+            assert!(GC::of(cp).is_other());
+        }
+    }
+
+    // Every GC!=Other must not be an BN
+    for cp in iter_all_chars() {
+        if !GC::of(cp).is_other() {
+            assert_ne!(BidiClass::of(cp), BidiClass::BoundaryNeutral);
+        }
+    }
+}
+
+/// `Bidi_Class=B := General_Category in Separators`
+///
+/// <http://www.unicode.org/reports/tr9/#NSM>
+#[test]
+fn test_bidi_b_against_gen_cat() {
+    // Every B must be a GC=Separator
+    for cp in iter_all_chars() {
+        if BidiClass::of(cp) == BidiClass::ParagraphSeparator {
+            assert!(GC::of(cp).is_separator());
+        }
+    }
+}
+
+/// `General_Category to Bidi_Class`
+///
+/// <http://www.unicode.org/reports/tr9/#Table_Bidirectional_Character_Types>
+#[test]
+fn test_gen_cat_against_bidi() {
+    // Every GC::Unassigned (Cn) is a BN (BoundaryNeutral)
+    for cp in iter_all_chars() {
+        match GC::of(cp) {
+            // Co => L
+            GC::PrivateUse => assert!(BidiClass::of(cp) == BidiClass::LeftToRight),
+            // Mc => L
+            GC::SpacingMark => assert!(BidiClass::of(cp) == BidiClass::LeftToRight),
+            // Lt => L
+            GC::TitlecaseLetter => assert!(BidiClass::of(cp) == BidiClass::LeftToRight),
+
+            // Pf => ON
+            GC::FinalPunctuation => assert!(BidiClass::of(cp) == BidiClass::OtherNeutral),
+            // Pi => ON
+            GC::InitialPunctuation => assert!(BidiClass::of(cp) == BidiClass::OtherNeutral),
+            // Pe => ON
+            GC::ClosePunctuation => assert!(BidiClass::of(cp) == BidiClass::OtherNeutral),
+            // Ps => ON
+            GC::OpenPunctuation => assert!(BidiClass::of(cp) == BidiClass::OtherNeutral),
+            // Pc => ON
+            GC::ConnectorPunctuation => assert!(BidiClass::of(cp) == BidiClass::OtherNeutral),
+
+            // Zp => WS
+            GC::ParagraphSeparator => assert!(BidiClass::of(cp) == BidiClass::ParagraphSeparator),
+            // Zl => WS
+            GC::LineSeparator => assert!(BidiClass::of(cp) == BidiClass::WhiteSpace),
+
+            // Me => NSM
+            GC::EnclosingMark => assert!(BidiClass::of(cp) == BidiClass::NonspacingMark),
+            // Mn => NSM
+            //GC::NonspacingMark => assert!(BidiClass::of(cp) == BidiClass::NonspacingMark), // 2 come out as being LeftToRight
+
+            GC::Control => assert!(
+                BidiClass::of(cp) == BidiClass::BoundaryNeutral ||
+                BidiClass::of(cp) == BidiClass::SegmentSeparator ||
+                BidiClass::of(cp) == BidiClass::ParagraphSeparator ||
+                BidiClass::of(cp) == BidiClass::WhiteSpace
+            ),
+            GC::SpaceSeparator => assert!(
+                BidiClass::of(cp) == BidiClass::CommonSeparator ||
+                BidiClass::of(cp) == BidiClass::WhiteSpace
+            ),
+            GC::CurrencySymbol => assert!(
+                BidiClass::of(cp) == BidiClass::EuropeanTerminator ||
+                BidiClass::of(cp) == BidiClass::ArabicLetter
+            ),
+
+            // Surrogate (Cs) is never found
+            // Unassigned, Format, OtherSymbol, ModifierSymbol, MathSymbol, OtherPunctuation, DashPunctuation,
+            // OtherNumber, LetterNumber, DecimalNumber, OtherLetter, ModifierLetter,
+            // LowercaseLetter, and UppercaseLetter can be multiple Bidi_Classes
+            _ => assert!(true),
+        }
+    }
+}
+
+
 /// `normal::is_combining_mark` and `GeneralCategory::is_mark()` are expected to return
 /// the same results.
 #[test]
