@@ -21,6 +21,23 @@ use unic_ucd::normal::is_combining_mark;
 use unic_ucd::category::GeneralCategory as GC;
 use unic_utils::iter_all_chars;
 
+/// `normal::is_combining_mark` and `GeneralCategory::is_mark()` are expected to return
+/// the same results.
+#[test]
+fn test_gen_cat_against_normal() {
+
+    for cp in iter_all_chars() {
+        // Every General_Category mark must be a combining mark
+        if GC::of(cp).is_mark() {
+            assert!(is_combining_mark(cp));
+        }
+
+        // Every combining mark must be a General_Category mark
+        if is_combining_mark(cp) {
+            assert!(GC::of(cp).is_mark());
+        }
+    }
+}
 
 /// `Bidi_Class=NSM := General_Category in { Mn (Nonspacing_Mark), Me (Enclosing_Mark) }`
 ///
@@ -47,32 +64,89 @@ fn test_bidi_nsm_against_gen_cat() {
 /// <http://www.unicode.org/reports/tr9/#NSM>
 #[test]
 fn test_bidi_bn_against_gen_cat() {
-    // Every BN must be a GC=Other
     for cp in iter_all_chars() {
+        // Every BN must be a GC=Other
         if BidiClass::of(cp) == BidiClass::BoundaryNeutral {
             assert!(GC::of(cp).is_other());
         }
-    }
 
-    // Every GC!=Other must not be an BN
-    for cp in iter_all_chars() {
+        // Every GC!=Other must not be an BN
         if !GC::of(cp).is_other() {
             assert_ne!(BidiClass::of(cp), BidiClass::BoundaryNeutral);
         }
     }
 }
 
-/// `Bidi_Class=B := General_Category in Separators`
+/// `Bidi_Class=B := General_Category in { Cc (Control), Zp (ParagraphSeparator) }`
 ///
 /// <http://www.unicode.org/reports/tr9/#NSM>
 #[test]
 fn test_bidi_b_against_gen_cat() {
-    // Every B must be a GC=Separator
+    // Every B must be a GC::Control or GC::ParagraphSeparator
     for cp in iter_all_chars() {
         if BidiClass::of(cp) == BidiClass::ParagraphSeparator {
-            assert!(GC::of(cp).is_separator());
+            assert!(
+                GC::of(cp) == GC::Control ||
+                GC::of(cp) == GC::ParagraphSeparator
+            );
         }
     }
+}
+
+/// `Bidi_Class=S := General_Category in { Cc (Control) }`
+///
+/// <http://www.unicode.org/reports/tr9/#NSM>
+#[test]
+fn test_bidi_s_against_gen_cat() {
+    // Every Segment Separator must be a GC::Control
+    for cp in iter_all_chars() {
+        if BidiClass::of(cp) == BidiClass::SegmentSeparator {
+            assert!(GC::of(cp) == GC::Control);
+        }
+    }
+}
+
+/// `Bidi_Class=WS := General_Category in { Cc (Control), Zs (SpaceSeparator), Zl (LineSeparator) }`
+///
+/// <http://www.unicode.org/reports/tr9/#NSM>
+#[test]
+fn test_bidi_ws_against_gen_cat() {
+    // Every BC::WhiteSpace must be a GC::Control, GC::SpaceSeparator, or GC::LineSeparator
+    for cp in iter_all_chars() {
+        if BidiClass::of(cp) == BidiClass::WhiteSpace {
+            assert!(
+                GC::of(cp) == GC::Control           ||
+                GC::of(cp) == GC::SpaceSeparator    ||
+                GC::of(cp) == GC::LineSeparator
+            );
+        }
+    }
+}
+
+/// `Bidi_Class=ON := General_Category in { Cc (Control), Zs (SpaceSeparator), Zl (LineSeparator) }`
+///
+/// <http://www.unicode.org/reports/tr9/#NSM>
+#[test]
+fn test_bidi_on_against_gen_cat() {
+    // Every BC::OtherNeutral must be a GC::Control, GC::SpaceSeparator, or GC::LineSeparator
+    for cp in iter_all_chars() {
+        if BidiClass::of(cp) == BidiClass::OtherNeutral {
+            if !GC::of(cp).is_symbol() && !GC::of(cp).is_punctuation() {
+
+                println!("{:?}", GC::of(cp));
+            }
+            assert!(
+                GC::of(cp).is_symbol() ||
+                GC::of(cp).is_punctuation()
+            );
+        }
+    }
+}
+
+#[test]
+fn example() {
+    let symbol = GC::ModifierSymbol;
+    println!("{:?} is symbol?: {:?}",symbol, symbol.is_symbol() );
 }
 
 /// `General_Category to Bidi_Class`
@@ -131,26 +205,6 @@ fn test_gen_cat_against_bidi() {
             // OtherNumber, LetterNumber, DecimalNumber, OtherLetter, ModifierLetter,
             // LowercaseLetter, and UppercaseLetter can be multiple Bidi_Classes
             _ => assert!(true),
-        }
-    }
-}
-
-
-/// `normal::is_combining_mark` and `GeneralCategory::is_mark()` are expected to return
-/// the same results.
-#[test]
-fn test_gen_cat_against_normal() {
-    // Every General_Category mark must be a combining mark
-    for cp in iter_all_chars() {
-        if GC::of(cp).is_mark() {
-            assert!(is_combining_mark(cp));
-        }
-    }
-
-    // Every combining mark must be a General_Category mark
-    for cp in iter_all_chars() {
-        if is_combining_mark(cp) {
-            assert!(GC::of(cp).is_mark());
         }
     }
 }
