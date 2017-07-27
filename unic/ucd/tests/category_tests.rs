@@ -30,29 +30,32 @@ fn test_bidi_nsm_against_gen_cat() {
     // Every NSM must be a GC=Mark
     for cp in iter_all_chars() {
         if BidiClass::of(cp) == BidiClass::NonspacingMark {
-            assert!(GC::is_mark(&GC::of(cp)));
+            assert!(is_combining_mark(cp));
         }
     }
 
     // Every GC!=Mark must not be an NSM
     for cp in iter_all_chars() {
-        if !GC::is_mark(&GC::of(cp)) {
+        if !is_combining_mark(cp) {
             assert_ne!(BidiClass::of(cp), BidiClass::NonspacingMark);
         }
     }
 }
-
-// This is just to help me learn what's happening
+/// `normal::is_combining_mark` and `GeneralCategory::is_mark()` are expected to return
+/// the same results.
 #[test]
-fn test_gc_val() {
-    let mut list: Vec<GC> = Vec::new();
+fn test_gen_cat_against_normal() {
+    // Every General_Category mark must be a combining mark
     for cp in iter_all_chars() {
-        let category = GC::of(cp);
-        if !list.contains(&category) {
-            list.push(category);
+        if GC::of(cp).is_mark() {
+            assert!(is_combining_mark(cp));
         }
     }
-    // prints all GC values except from 'Unassigned'
-    // which is obvious since we loop over all chars
-    println!("{:?}", list);
+
+    // Every combining mark must be a General_Category mark
+    for cp in iter_all_chars() {
+        if is_combining_mark(cp) {
+            assert!(GC::of(cp).is_mark());
+        }
+    }
 }
